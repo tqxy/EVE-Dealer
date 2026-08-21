@@ -16,7 +16,7 @@
   const emptyState = $('emptyState');
   const warningBar = $('warningBar');
 
-  const AUTO_REFRESH_MS = 15 * 1000;
+  const AUTO_REFRESH_MS = 60 * 1000;
 
   let currentItem = null;
   let currentRegion = 10000002; // The Forge
