@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EVE-Dealer</title>
+  <link rel="stylesheet" href="/docs/eve-theme.css">
+  <link rel="stylesheet" href="/vendor/uPlot.min.css">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <!-- 功能栏：当前只有"价格查询"可用，其余为预留位 -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">EVE<span>DEALER</span></div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-page="price">
+          <span class="nav-icon">◈</span>价格查询
+        </a>
+        <a class="nav-item disabled" title="预留：未来版本">
+          <span class="nav-icon">◉</span>市场扫描<span class="nav-tag">预留</span>
+        </a>
+        <a class="nav-item disabled" title="预留：未来版本">
+          <span class="nav-icon">▣</span>物品数据库<span class="nav-tag">预留</span>
+        </a>
+        <a class="nav-item disabled" title="预留：未来版本">
+          <span class="nav-icon">◍</span>资产分析<span class="nav-tag">预留</span>
+        </a>
+        <a class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙</span>设置
+        </a>
+      </nav>
+      <div class="sidebar-footer">SERENITY · 国服</div>
+    </aside>
+
+    <!-- 主区域：价格查询 -->
+    <main class="main page" id="page-price">
+      <header class="page-header">
+        <h1>商品价格查询</h1>
+        <span class="page-sub">星域市场 · <span id="regionLabel">加载中…</span></span>
+      </header>
+
+      <div class="search-bar eve-panel">
+        <select id="regionSelect" class="eve-select region-select" title="选择星域">
+          <option value="0">全星域</option>
+          <option value="10000002" selected>The Forge 伏尔戈</option>
+        </select>
+        <input id="searchInput" class="eve-input" type="text"
+               placeholder="输入物品名称搜索，如：三钛合金 / Tritanium / 星城…" autocomplete="off">
+        <div id="searchDropdown" class="search-dropdown hidden"></div>
+      </div>
+
+      <div id="warningBar" class="eve-warning-bar hidden"></div>
+
+      <div id="resultArea" class="hidden">
+        <!-- 物品信息 + 实时价格 -->
+        <section class="eve-panel item-summary">
+          <img id="itemIcon" class="item-icon" alt="" src="">
+          <div class="item-meta">
+            <div id="itemName" class="item-name"></div>
+            <div id="itemCategory" class="item-category"></div>
+            <div id="itemId" class="item-id"></div>
+          </div>
+          <div class="price-cards">
+            <div class="price-card">
+              <div class="price-label">卖一价</div>
+              <div id="priceSell" class="price-value eve-num">—</div>
+            </div>
+            <div class="price-card">
+              <div class="price-label">买一价</div>
+              <div id="priceBuy" class="price-value eve-num">—</div>
+            </div>
+            <div class="price-card">
+              <div class="price-label">昨日成交量</div>
+              <div id="priceVolume" class="price-value eve-num">—</div>
+            </div>
+            <div class="price-card">
+              <div class="price-label">昨日均价</div>
+              <div id="priceAvg" class="price-value eve-num">—</div>
+            </div>
+          </div>
+        </section>
+        <div class="updated-line">
+          <span id="priceUpdatedAt"></span>
+          <span class="auto-refresh-note">每 15 秒自动刷新</span>
+        </div>
+
+        <!-- 订单明细 -->
+        <section class="eve-panel orders-panel">
+          <div class="orders-grid">
+            <div class="orders-col">
+              <div class="orders-title sell-title">卖单 <span class="orders-sub">价格升序 · 前 20（含公开合同）</span></div>
+              <table class="eve-table orders-table">
+                <thead>
+                  <tr><th>价格 (ISK)</th><th>数量</th><th>位置</th><th>时间</th></tr>
+                </thead>
+                <tbody id="sellOrdersBody">
+                  <tr><td colspan="4" class="orders-empty">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="orders-col">
+              <div class="orders-title buy-title">买单 <span class="orders-sub">价格降序 · 前 20（含公开合同）</span></div>
+              <table class="eve-table orders-table">
+                <thead>
+                  <tr><th>价格 (ISK)</th><th>数量</th><th>位置</th><th>时间</th></tr>
+                </thead>
+                <tbody id="buyOrdersBody">
+                  <tr><td colspan="4" class="orders-empty">—</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="updated-line">
+            <span id="ordersUpdatedAt"></span>
+            <span id="contractsNote"></span>
+          </div>
+        </section>
+
+        <!-- 历史价格曲线 -->
+        <section class="eve-panel chart-panel">
+          <div class="chart-header">
+            <span class="chart-title">历史价格走势</span>
+            <div class="range-btns">
+              <button class="eve-btn range-btn" data-days="30">30天</button>
+              <button class="eve-btn range-btn" data-days="90">90天</button>
+              <button class="eve-btn range-btn" data-days="180">180天</button>
+              <button class="eve-btn range-btn active" data-days="0">全部</button>
+            </div>
+          </div>
+          <div id="chart" class="chart"></div>
+          <div class="chart-legend">
+            <span><i class="dot" style="background:#58a7bf"></i>均价</span>
+            <span><i class="dot" style="background:#8dc169"></i>最高</span>
+            <span><i class="dot" style="background:#ff454b"></i>最低</span>
+            <span><i class="dot" style="background:rgba(64,113,150,.6)"></i>成交量(右轴)</span>
+          </div>
+        </section>
+      </div>
+
+      <div id="emptyState" class="empty-state">
+        <div class="empty-holo">◈</div>
+        <p>选择星域并搜索一件物品，查看实时价格、订单明细与历史走势</p>
+      </div>
+    </main>
+
+    <!-- 主区域：设置 - ESI 凭证 -->
+    <main class="main page hidden" id="page-settings">
+      <header class="page-header">
+        <h1>设置</h1>
+        <span class="page-sub">ESI 凭证 · 网易账号授权（授权码模式，持有 refresh_token，到期前自动刷新）</span>
+      </header>
+
+      <div id="authWarningBar" class="eve-warning-bar hidden"></div>
+
+      <!-- 凭证状态 -->
+      <section class="eve-panel auth-panel">
+        <div class="auth-status-row">
+          <img id="authAvatar" class="auth-avatar hidden" alt="">
+          <div class="auth-identity">
+            <div id="authCharName" class="auth-char">未登录</div>
+            <div id="authStatusLine" class="auth-status-line">尚未持有 ESI 凭证</div>
+            <div id="authScopes" class="auth-scopes"></div>
+          </div>
+          <span id="authBadge" class="auth-badge badge-none">无凭证</span>
+        </div>
+      </section>
+
+      <!-- 授权流程 -->
+      <section class="eve-panel">
+        <div class="auth-steps">
+          <div class="auth-step"><b>1</b> 点击下方按钮，在打开的网易页面完成登录与授权（会先跳转 logoff 清理旧会话）</div>
+          <div class="auth-btn-row">
+            <button id="openAuthBtn" class="eve-btn eve-btn-primary">打开授权页面</button>
+            <button id="copyAuthUrlBtn" class="eve-btn hidden">复制授权链接</button>
+          </div>
+          <div id="authUrlLine" class="auth-url-line hidden"></div>
+          <div class="auth-step"><b>2</b> 授权完成后浏览器会跳转到回调页，复制地址栏的完整地址</div>
+          <div class="auth-step"><b>3</b> 粘贴到下面并保存</div>
+          <div class="auth-callback-row">
+            <input id="callbackInput" class="eve-input" type="text"
+                   placeholder="粘贴回调地址，如 https://ali-esi.evepc.163.com/ui/oauth2-redirect.html?code=…">
+            <button id="saveCallbackBtn" class="eve-btn eve-btn-primary">保存凭证</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 凭证操作 -->
+      <section class="eve-panel">
+        <div class="auth-actions">
+          <button id="refreshTokenBtn" class="eve-btn">立即刷新</button>
+          <button id="clearTokenBtn" class="eve-btn eve-btn-danger">清除凭证</button>
+          <span class="auth-note">授权码模式下服务端每 60 秒检查一次，到期前 5 分钟自动换新，无需人工干预</span>
+        </div>
+      </section>
+
+      <!-- 合同单价计算 -->
+      <section class="eve-panel valuation-panel">
+        <div class="valuation-title">合同单价计算</div>
+        <div class="valuation-formula">
+          <div class="formula-line">仅含该物品的合同：<span class="eve-num">单价 = 合同总价 ÷ 该物品数量</span></div>
+          <div class="formula-line">含其他物品的合同：<span class="eve-num">单价 = (合同总价 − Σ其他物品估值) ÷ 该物品数量</span></div>
+          <div class="formula-line">其他物品估值 = <span id="basisText">该星域最高收单价</span> × 折扣 × 数量；折算结果 ≤ 0 或无法估值的合同不展示</div>
+        </div>
+        <div class="valuation-form">
+          <label>估值基准
+            <select id="basisSelect" class="eve-select">
+              <option value="buy">最高收单价</option>
+              <option value="sell">最低卖单价</option>
+            </select>
+          </label>
+          <label>折扣系数
+            <input id="discountInput" class="eve-input discount-input" type="number" min="0.01" max="2" step="0.05" value="0.9">
+          </label>
+          <button id="saveValuationBtn" class="eve-btn eve-btn-primary">保存公式</button>
+          <span id="valuationSaved" class="valuation-saved hidden">已保存，立即生效</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/vendor/uPlot.iife.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

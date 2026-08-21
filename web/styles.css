@@ -1,0 +1,476 @@
+/* EVE-Dealer 前端布局样式（主题令牌见 /docs/eve-theme.css） */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+.layout {
+  display: flex;
+  height: 100vh;
+  background: var(--eve-window-bg);
+}
+
+/* ---------- 侧边功能栏 ---------- */
+
+.sidebar {
+  width: 208px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--eve-bg-secondary);
+  border-right: 1px solid var(--eve-border-dark);
+}
+
+.sidebar-logo {
+  padding: var(--eve-space-xl) var(--eve-space-lg);
+  font-size: var(--eve-fs-headline);
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--eve-text-highlight);
+  border-bottom: 1px solid var(--eve-divider);
+}
+.sidebar-logo span { color: var(--eve-cryo-blue); }
+
+.sidebar-nav {
+  flex: 1;
+  padding: var(--eve-space-md) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--eve-space-xs);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-ml);
+  padding: var(--eve-space-ml) var(--eve-space-lg);
+  color: var(--eve-text-secondary);
+  font-size: var(--eve-fs-body);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+}
+.nav-item:hover:not(.disabled) {
+  background: var(--eve-bg-hover);
+  color: var(--eve-text-highlight);
+}
+.nav-item.active {
+  background: var(--eve-bg-selected);
+  color: var(--eve-text-special);
+  border-left-color: var(--eve-cryo-blue);
+}
+.nav-item.disabled {
+  color: var(--eve-text-disabled);
+  cursor: default;
+}
+.nav-icon { width: 18px; text-align: center; }
+.nav-tag {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--eve-text-disabled);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  padding: 1px 5px;
+}
+
+.sidebar-footer {
+  padding: var(--eve-space-lg);
+  font-size: var(--eve-fs-detail);
+  letter-spacing: 1px;
+  color: var(--eve-text-disabled);
+  border-top: 1px solid var(--eve-divider);
+}
+
+/* ---------- 主区域 ---------- */
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--eve-space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--eve-space-lg);
+}
+
+.page-header { display: flex; align-items: baseline; gap: var(--eve-space-lg); }
+.page-header h1 {
+  font-size: var(--eve-fs-display);
+  font-weight: 700;
+  color: var(--eve-text-highlight);
+}
+.page-sub {
+  font-size: var(--eve-fs-detail);
+  letter-spacing: 0.5px;
+  color: var(--eve-text-secondary);
+}
+
+/* ---------- 搜索 ---------- */
+
+.search-bar {
+  position: relative;
+  padding: var(--eve-space-md);
+  display: flex;
+  gap: var(--eve-space-md);
+}
+.search-bar .eve-input { flex: 1; }
+
+.region-select {
+  min-width: 200px;
+  max-width: 260px;
+  color: var(--eve-text-special);
+}
+
+.search-dropdown {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: calc(var(--eve-space-md) + 212px);
+  right: var(--eve-space-md);
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--eve-bg-dark);
+  border: 1px solid var(--eve-border);
+  border-radius: 2px;
+  z-index: 100;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-ml);
+  padding: var(--eve-space-md) var(--eve-space-ml);
+  cursor: pointer;
+}
+.search-item:hover { background: var(--eve-dropdown-hover); }
+.search-item img { width: 24px; height: 24px; }
+.search-item .s-name { color: var(--eve-text-highlight); }
+.search-item .s-cat {
+  margin-left: auto;
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-secondary);
+}
+.search-empty {
+  padding: var(--eve-space-lg);
+  text-align: center;
+  color: var(--eve-text-secondary);
+  font-size: var(--eve-fs-detail);
+}
+
+/* ---------- 物品信息与价格卡 ---------- */
+
+.item-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-xl);
+}
+
+.item-icon {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  background: var(--eve-bg-dark);
+}
+
+.item-name {
+  font-size: var(--eve-fs-headline);
+  font-weight: 700;
+  color: var(--eve-text-highlight);
+}
+.item-category { color: var(--eve-text-secondary); font-size: var(--eve-fs-detail); margin-top: 4px; }
+.item-id { color: var(--eve-text-disabled); font-size: var(--eve-fs-detail); margin-top: 2px; }
+
+.price-cards {
+  margin-left: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: var(--eve-space-lg);
+}
+
+.price-card {
+  background: var(--eve-bg-dark);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  padding: var(--eve-space-ml) var(--eve-space-lg);
+  min-width: 140px;
+}
+.price-label {
+  font-size: var(--eve-fs-detail);
+  letter-spacing: 0.5px;
+  color: var(--eve-text-secondary);
+  margin-bottom: var(--eve-space-sm);
+}
+.price-value { font-size: var(--eve-fs-header); }
+
+/* ---------- 订单明细 ---------- */
+
+.orders-panel { display: flex; flex-direction: column; gap: var(--eve-space-md); }
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--eve-space-xl);
+}
+
+.orders-title {
+  font-size: var(--eve-fs-header);
+  font-weight: 600;
+  padding-bottom: var(--eve-space-md);
+}
+.orders-title.sell-title { color: var(--eve-danger); }
+.orders-title.buy-title { color: var(--eve-success); }
+.orders-sub {
+  font-size: var(--eve-fs-detail);
+  font-weight: 400;
+  color: var(--eve-text-secondary);
+  margin-left: var(--eve-space-md);
+}
+
+.orders-table { font-size: var(--eve-fs-detail); }
+.orders-table td, .orders-table th { padding: var(--eve-space-sm) var(--eve-space-md); }
+.orders-table .o-price-sell { color: var(--eve-danger); font-weight: 600; }
+.orders-table .o-price-buy { color: var(--eve-success); font-weight: 600; }
+.orders-table .o-loc { color: var(--eve-text-secondary); }
+.orders-table .o-time { color: var(--eve-text-disabled); }
+.orders-table .o-structure { color: var(--eve-warning); }
+.orders-empty { text-align: center; color: var(--eve-text-disabled); }
+
+/* 合同行标注 */
+.tag-contract {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--eve-omega);
+  border: 1px solid var(--eve-omega);
+  border-radius: 2px;
+  padding: 0 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.price-estimated { border-bottom: 1px dashed var(--eve-warning); cursor: help; }
+.region-hint {
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-secondary);
+  margin-left: 6px;
+}
+.contracts-note { color: var(--eve-omega); }
+
+.orders-col { max-height: 340px; overflow-y: auto; }
+
+.updated-line {
+  display: flex;
+  gap: var(--eve-space-lg);
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-disabled);
+  padding: 0 var(--eve-space-sm);
+}
+.auto-refresh-note { color: var(--eve-smoke-blue); }
+
+/* ---------- 图表 ---------- */
+
+.chart-panel { display: flex; flex-direction: column; gap: var(--eve-space-ml); }
+
+.chart-header { display: flex; align-items: center; }
+.chart-title {
+  font-size: var(--eve-fs-header);
+  color: var(--eve-text-highlight);
+  font-weight: 600;
+}
+
+.range-btns { margin-left: auto; display: flex; gap: var(--eve-space-md); }
+.range-btn { padding: var(--eve-space-xs) var(--eve-space-ml); font-size: var(--eve-fs-detail); }
+.range-btn.active {
+  background: var(--eve-smoke-blue);
+  border-color: var(--eve-cryo-blue);
+  color: var(--eve-text-special);
+}
+
+.chart { width: 100%; height: 380px; }
+
+/* uPlot 深色适配 */
+.u-over { border: 1px solid var(--eve-border-dark); }
+.u-legend {
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-secondary);
+  text-shadow: var(--eve-text-shadow);
+}
+.u-legend .u-marker { width: 10px; height: 3px; }
+.u-select { background: rgba(88, 167, 191, 0.12); }
+
+.chart-legend {
+  display: flex;
+  gap: var(--eve-space-xl);
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-secondary);
+}
+.chart-legend .dot {
+  display: inline-block;
+  width: 10px; height: 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+/* ---------- 设置 / ESI 凭证 ---------- */
+
+.auth-panel { padding: var(--eve-space-xl); }
+
+.auth-status-row {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-xl);
+}
+
+.auth-avatar {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  background: var(--eve-bg-dark);
+}
+
+.auth-char {
+  font-size: var(--eve-fs-headline);
+  font-weight: 700;
+  color: var(--eve-text-highlight);
+}
+.auth-status-line { color: var(--eve-text-secondary); margin-top: 4px; }
+.auth-scopes {
+  color: var(--eve-text-disabled);
+  font-size: var(--eve-fs-detail);
+  margin-top: 4px;
+  max-width: 640px;
+  word-break: break-all;
+}
+
+.auth-badge {
+  margin-left: auto;
+  font-size: var(--eve-fs-detail);
+  letter-spacing: 1px;
+  padding: var(--eve-space-sm) var(--eve-space-lg);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+}
+.auth-badge.badge-none { color: var(--eve-text-disabled); }
+.auth-badge.badge-valid { color: var(--eve-success); border-color: var(--eve-success); }
+.auth-badge.badge-expired { color: var(--eve-danger); border-color: var(--eve-danger); }
+
+.auth-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eve-space-lg);
+}
+.auth-step { color: var(--eve-text-primary); }
+.auth-step b {
+  display: inline-block;
+  width: 20px; height: 20px;
+  line-height: 20px;
+  text-align: center;
+  margin-right: var(--eve-space-md);
+  background: var(--eve-smoke-blue);
+  color: var(--eve-text-special);
+  border-radius: 2px;
+  font-size: var(--eve-fs-detail);
+}
+
+.auth-btn-row { display: flex; gap: var(--eve-space-md); }
+
+.auth-url-line {
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-link);
+  word-break: break-all;
+  background: var(--eve-bg-dark);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  padding: var(--eve-space-md);
+  user-select: all;
+}
+
+.auth-callback-row { display: flex; gap: var(--eve-space-md); }
+.auth-callback-row .eve-input { flex: 1; }
+
+.auth-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-lg);
+}
+.auth-note {
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-disabled);
+}
+
+/* 合同单价公式配置 */
+.valuation-panel { display: flex; flex-direction: column; gap: var(--eve-space-lg); }
+.valuation-title {
+  font-size: var(--eve-fs-header);
+  font-weight: 600;
+  color: var(--eve-text-highlight);
+}
+.valuation-formula {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eve-space-sm);
+  font-size: var(--eve-fs-detail);
+  color: var(--eve-text-secondary);
+  background: var(--eve-bg-dark);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  padding: var(--eve-space-ml) var(--eve-space-lg);
+}
+.valuation-form {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-xl);
+}
+.valuation-form label {
+  display: flex;
+  align-items: center;
+  gap: var(--eve-space-md);
+  color: var(--eve-text-secondary);
+  font-size: var(--eve-fs-detail);
+}
+.discount-input { width: 90px; }
+.valuation-saved {
+  color: var(--eve-success);
+  font-size: var(--eve-fs-detail);
+}
+
+/* 数据变动特效 */
+@keyframes eveFlash {
+  0% { background: rgba(88, 167, 191, 0.45); }
+  100% { background: transparent; }
+}
+.flash-change {
+  animation: eveFlash 1.2s ease-out;
+}
+@keyframes eveRowFlash {
+  0% { background: rgba(255, 198, 74, 0.18); }
+  100% { background: transparent; }
+}
+.row-flash td {
+  animation: eveRowFlash 1.2s ease-out;
+}
+
+/* ---------- 空状态 / 通用 ---------- */
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--eve-space-lg);
+  color: var(--eve-text-secondary);
+}
+.empty-holo {
+  font-size: 64px;
+  color: var(--eve-smoke-blue);
+  text-shadow: 0 0 24px rgba(88, 167, 191, 0.4);
+}
+
+.hidden { display: none !important; }
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--eve-window-bg); }
+::-webkit-scrollbar-thumb { background: var(--eve-border-dark); border-radius: 5px; }
+::-webkit-scrollbar-thumb:hover { background: var(--eve-border); }

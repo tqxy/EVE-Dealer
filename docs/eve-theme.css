@@ -1,0 +1,198 @@
+/* ============================================================
+ * EVE 科幻风主题令牌与基础组件
+ * 设计令牌提取自 RIFT Intel Fusion Tool (compose/theme/RiftColors.kt)
+ * 参考: https://gitlab.com/rift-intel-fusion-tool/rift-intel-fusion-tool/
+ * 详细说明见同目录 eve-ui-research.md
+ * ============================================================ */
+
+:root {
+  /* ---- 背景层级 ---- */
+  --eve-window-bg: #070707;
+  --eve-map-bg: #0a0e15;
+  --eve-bg-dark: #0a1215;        /* 输入框/凹陷区 */
+  --eve-bg-secondary: #141414;   /* 次级面板 */
+  --eve-bg-secondary-hover: #1f272b;
+  --eve-bg-hover: #131c1f;
+  --eve-bg-primary: #172327;     /* 主面板/卡片 */
+  --eve-bg-selected: #355866;
+  --eve-bg-light: #36525e;       /* 凸起强调面板 */
+  --eve-bg-error: #7f2628;
+  --eve-bg-warning: #180f09;
+
+  /* ---- 文字 ---- */
+  --eve-text-highlight: rgba(255, 255, 255, 0.9);
+  --eve-text-primary: rgba(255, 255, 255, 0.75);
+  --eve-text-secondary: rgba(255, 255, 255, 0.5);
+  --eve-text-disabled: rgba(255, 255, 255, 0.3);
+  --eve-text-special: #c3e9ff;   /* 冰蓝高亮（重要数值） */
+  --eve-text-green: #029c02;
+  --eve-text-red: #fb0101;
+  --eve-text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+
+  /* ---- 链接（EVE 标志性的橙/金） ---- */
+  --eve-link: #d98d00;
+  --eve-link-hover: #ffb732;
+  --eve-link-external: #ffe400;
+  --eve-link-help: #94ccff;
+  --eve-link-help-hover: #aed9ff;
+
+  /* ---- 边框 ---- */
+  --eve-border: #41707f;
+  --eve-border-dark: #213841;
+  --eve-border-light: #71bed3;
+  --eve-border-error: #fe5b61;
+  --eve-divider: #1e2022;
+
+  /* ---- 主色与语义色（EVE 官方命名） ---- */
+  --eve-cryo-blue: #58a7bf;      /* 主色 */
+  --eve-primary-blue: #407196;
+  --eve-smoke-blue: #305665;
+  --eve-ice-white: #c2e5f2;
+  --eve-success: #8dc169;
+  --eve-lime: #b2f84d;
+  --eve-danger: #ff454b;
+  --eve-cherry-red: #991f24;
+  --eve-warning: #f39058;
+  --eve-sand-yellow: #ffb845;
+  --eve-omega: #ffc64a;
+  --eve-plex: #ffcc00;
+  --eve-aura-purple: #956bec;
+  --eve-air-turquoise: #70f0e3;
+  --eve-evermark: #ceff01;
+  --eve-gold: #996a1f;
+
+  /* ---- 控件 ---- */
+  --eve-progress-bg: #1a1e1f;
+  --eve-progress-fill: #0d557e;
+  --eve-slider-thumb: #58a7bf;
+  --eve-dropdown-hover: #18262d;
+  --eve-dropdown-selected: #16272e;
+
+  /* ---- 字体 ---- */
+  --eve-font-family: "EVE Sans Neue", "Segoe UI", "Noto Sans SC", sans-serif;
+  --eve-fs-detail: 12px;
+  --eve-fs-body: 14px;
+  --eve-fs-header: 16px;
+  --eve-fs-headline: 19px;
+  --eve-fs-display: 24px;
+
+  /* ---- 间距 ---- */
+  --eve-space-xs: 2px;
+  --eve-space-sm: 4px;
+  --eve-space-md: 8px;
+  --eve-space-ml: 12px;
+  --eve-space-lg: 16px;
+  --eve-space-xl: 24px;
+}
+
+/* 可选：本地引入 EVE Sans Neue（需自行取得字体文件并确认 CCP 许可） */
+/* @font-face {
+  font-family: "EVE Sans Neue";
+  src: url("./fonts/evesansneue-regular.ttf") format("truetype");
+} */
+
+body {
+  font-family: var(--eve-font-family);
+  font-size: var(--eve-fs-body);
+  background: var(--eve-window-bg);
+  color: var(--eve-text-primary);
+  text-shadow: var(--eve-text-shadow);
+}
+
+a { color: var(--eve-link); font-weight: 600; }
+a:hover { color: var(--eve-link-hover); }
+
+/* ---- 基础组件 ---- */
+
+.eve-panel {
+  background: var(--eve-bg-primary);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 3px;
+  padding: var(--eve-space-lg);
+}
+
+.eve-btn {
+  background: var(--eve-bg-dark);
+  border: 1px solid var(--eve-border);
+  border-radius: 2px;
+  color: var(--eve-text-primary);
+  padding: var(--eve-space-sm) var(--eve-space-lg);
+  font-size: var(--eve-fs-body);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.eve-btn:hover {
+  border-color: var(--eve-border-light);
+  color: var(--eve-text-highlight);
+}
+.eve-btn-primary {
+  background: var(--eve-smoke-blue);
+  border-color: var(--eve-cryo-blue);
+  color: var(--eve-text-special);
+}
+.eve-btn-primary:hover {
+  border-color: var(--eve-border-light);
+  background: var(--eve-bg-light);
+}
+.eve-btn-danger {
+  border-color: var(--eve-border-error);
+  color: var(--eve-danger);
+}
+
+.eve-input,
+.eve-select {
+  background: var(--eve-bg-dark);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  color: var(--eve-text-highlight);
+  padding: var(--eve-space-sm) var(--eve-space-md);
+  font-size: var(--eve-fs-body);
+}
+.eve-input:focus,
+.eve-select:focus {
+  outline: none;
+  border-color: var(--eve-cryo-blue);
+}
+
+/* 表格：选中行/悬停行 */
+.eve-table { width: 100%; border-collapse: collapse; }
+.eve-table th {
+  color: var(--eve-text-secondary);
+  font-size: var(--eve-fs-detail);
+  letter-spacing: 0.5px;
+  text-align: left;
+  border-bottom: 1px solid var(--eve-divider);
+  padding: var(--eve-space-md);
+}
+.eve-table td {
+  padding: var(--eve-space-md);
+  border-bottom: 1px solid var(--eve-divider);
+}
+.eve-table tbody tr:hover { background: var(--eve-bg-hover); }
+.eve-table tbody tr.selected { background: var(--eve-bg-selected); }
+
+/* 数值高亮 / 盈亏 */
+.eve-num { color: var(--eve-text-special); font-weight: 600; }
+.eve-profit { color: var(--eve-success); }
+.eve-loss { color: var(--eve-danger); }
+
+/* 警告条 */
+.eve-warning-bar {
+  background: var(--eve-bg-warning);
+  color: var(--eve-warning);
+  border: 1px solid var(--eve-border-dark);
+  border-radius: 2px;
+  padding: var(--eve-space-md) var(--eve-space-lg);
+}
+
+/* 进度条 */
+.eve-progress {
+  background: var(--eve-progress-bg);
+  height: 6px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.eve-progress > div {
+  background: var(--eve-progress-fill);
+  height: 100%;
+}

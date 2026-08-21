@@ -1,0 +1,45 @@
+{
+  "name": "eve-dealer",
+  "version": "0.1.0",
+  "description": "EVE 国服 ESI 基础支撑模块库：OAuth 认证、ESI 客户端、SQLite 持久化、物品数据库、市场价格服务",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "serve": "tsx app/server.ts",
+    "example": "tsx examples/basic.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "EVE",
+    "ESI",
+    "serenity",
+    "market"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.10.0",
+    "exceljs": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}

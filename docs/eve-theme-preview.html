@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>EVE 主题预览</title>
+<link rel="stylesheet" href="eve-theme.css">
+<style>
+  body { padding: var(--eve-space-xl); max-width: 960px; margin: 0 auto; }
+  h1 { font-size: var(--eve-fs-display); color: var(--eve-text-highlight); }
+  h2 { font-size: var(--eve-fs-headline); color: var(--eve-text-special); margin: var(--eve-space-xl) 0 var(--eve-space-md); }
+  .row { display: flex; gap: var(--eve-space-md); flex-wrap: wrap; margin-bottom: var(--eve-space-lg); }
+  .swatch { width: 120px; font-size: var(--eve-fs-detail); color: var(--eve-text-secondary); }
+  .swatch > div { height: 40px; border: 1px solid var(--eve-border-dark); border-radius: 2px; margin-bottom: var(--eve-space-xs); }
+</style>
+</head>
+<body>
+  <h1>EVE 科幻风主题预览</h1>
+  <p style="color: var(--eve-text-secondary)">
+    令牌源自 RIFT Intel Fusion Tool · 主色 <span style="color: var(--eve-cryo-blue)">cryo blue #58A7BF</span> ·
+    链接示例：<a href="#">普通链接</a> / <a href="#" style="color: var(--eve-link-external)">外部链接</a> /
+    <a href="#" style="color: var(--eve-link-help)">帮助链接</a>
+  </p>
+
+  <h2>语义色板</h2>
+  <div class="row">
+    <div class="swatch"><div style="background: var(--eve-cryo-blue)"></div>cryoBlue</div>
+    <div class="swatch"><div style="background: var(--eve-success)"></div>success</div>
+    <div class="swatch"><div style="background: var(--eve-danger)"></div>danger</div>
+    <div class="swatch"><div style="background: var(--eve-warning)"></div>warning</div>
+    <div class="swatch"><div style="background: var(--eve-omega)"></div>omega</div>
+    <div class="swatch"><div style="background: var(--eve-aura-purple)"></div>aura</div>
+  </div>
+
+  <h2>组件</h2>
+  <div class="eve-panel">
+    <div class="row">
+      <button class="eve-btn">普通按钮</button>
+      <button class="eve-btn eve-btn-primary">主要操作</button>
+      <button class="eve-btn eve-btn-danger">危险操作</button>
+      <input class="eve-input" placeholder="输入物品名称…">
+    </div>
+    <div class="eve-warning-bar">警告：目标建筑库存低于安全线，建议立即补货。</div>
+    <br>
+    <div class="eve-progress"><div style="width: 62%"></div></div>
+  </div>
+
+  <h2>数据表格</h2>
+  <div class="eve-panel">
+    <table class="eve-table">
+      <thead><tr><th>物品</th><th>建筑</th><th>缺口</th><th>预估利润</th></tr></thead>
+      <tbody>
+        <tr class="selected"><td>Tritanium</td><td>4-HWWF 要塞</td><td class="eve-num">1,240,000</td><td class="eve-profit">+18.6M ISK</td></tr>
+        <tr><td>Mexallon</td><td>Jita 4-4</td><td class="eve-num">320,500</td><td class="eve-profit">+4.2M ISK</td></tr>
+        <tr><td>PLEX</td><td>Amarr VIII</td><td class="eve-num">12</td><td class="eve-loss">-1.1M ISK</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
