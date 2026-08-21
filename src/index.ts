@@ -43,8 +43,8 @@ export { Registry } from './db/registry.js';
 
 export { MemoryCache } from './cache/memoryCache.js';
 
-export { getRegionIds, getRegion, getSystem } from './esi/endpoints/universe.js';
-export type { RegionInfo, SystemInfo } from './esi/endpoints/universe.js';
+export { getRegionIds, getRegion, getSystem, getStation } from './esi/endpoints/universe.js';
+export type { RegionInfo, SystemInfo, StationInfo } from './esi/endpoints/universe.js';
 
 export { getPublicContracts, getPublicContractItems } from './esi/endpoints/contracts.js';
 export type { PublicContract, PublicContractItem } from './esi/endpoints/contracts.js';

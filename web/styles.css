@@ -263,7 +263,7 @@ html, body { height: 100%; }
   border: 1px solid;
   border-radius: 2px;
   padding: 0 3px;
-  margin-right: 6px;
+  margin-left: 6px;
   vertical-align: middle;
   text-shadow: none;
 }

@@ -45,3 +45,17 @@ export function getSystem(
     query: { language }
   });
 }
+
+export interface StationInfo {
+  station_id: number;
+  name: string;
+  system_id: number;
+}
+
+/** 空间站信息（可解析所属星系） */
+export function getStation(
+  client: EsiClient,
+  stationId: number
+): Promise<EsiResult<StationInfo>> {
+  return client.request<StationInfo>(`/universe/stations/${stationId}/`);
+}

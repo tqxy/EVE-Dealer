@@ -19,7 +19,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "serve": "tsx app/server.ts",
-    "example": "tsx examples/basic.ts"
+    "example": "tsx examples/basic.ts",
+    "push": "bash scripts/push.sh"
   },
   "engines": {
     "node": ">=20"

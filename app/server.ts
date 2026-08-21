@@ -21,7 +21,7 @@ import { Registry } from '../src/db/registry.js';
 import { EsiClient } from '../src/esi/client.js';
 import { getRegionOrders, getMarketHistory } from '../src/esi/endpoints/market.js';
 import type { MarketOrder } from '../src/esi/endpoints/market.js';
-import { getRegionIds, getRegion, getSystem } from '../src/esi/endpoints/universe.js';
+import { getRegionIds, getRegion, getSystem, getStation } from '../src/esi/endpoints/universe.js';
 import { getPublicContracts, getPublicContractItems } from '../src/esi/endpoints/contracts.js';
 import { ItemDatabase } from '../src/items/itemDatabase.js';
 import { MemoryCache } from '../src/cache/memoryCache.js';
@@ -97,6 +97,8 @@ interface IndexedContract {
   side: 'sell' | 'buy';
   total_price: number;
   region_id: number;
+  /** 合同所在地点（空间站或玩家建筑） */
+  location_id: number;
   title: string;
   date_issued: string;
   date_expired: string;
@@ -114,6 +116,10 @@ interface QueriedContract {
   estimated: boolean;
   region_id: number;
   region_name?: string | null;
+  /** 合同所在星系（空间站可解析，玩家建筑为 null） */
+  system_name?: string | null;
+  security?: number | null;
+  is_structure?: boolean;
   title: string;
   date_issued: string;
   date_expired: string;
@@ -144,7 +150,7 @@ const registry = new Registry();
 const config = { ...SERENITY_DEFAULTS, ...registry.getConfig() };
 const client = new EsiClient(config, { delayMs: 100 });
 /** 批量扫描专用客户端：更快的请求节奏，与交互式请求隔离 */
-const scanClient = new EsiClient(config, { delayMs: 30 });
+const scanClient = new EsiClient(config, { delayMs: 20 });
 const itemDb = new ItemDatabase();
 
 const cacheKey = (regionId: number, typeId: number) => `${regionId}:${typeId}`;
@@ -345,10 +351,12 @@ async function fetchRegionList(): Promise<{ region_id: number; name: string }[]>
 // ---------- 公开合同索引 ----------
 
 const CONTRACT_INDEX_TTL_MS = 30 * 60 * 1000; // 索引 30 分钟内视为新鲜
-const CONTRACT_SCAN_CONCURRENCY = 8;
+const CONTRACT_SCAN_CONCURRENCY = 10;
 
 interface ContractScanState {
   scanning: boolean;
+  /** 最近一次扫描尝试时间（无论成败，用于失败冷却） */
+  attemptedAt: number;
   scannedAt: number;
   byType: Map<number, IndexedContract[]>;
 }
@@ -361,7 +369,7 @@ async function scanRegionContracts(regionId: number): Promise<void> {
   if (state?.scanning) return;
   if (state && Date.now() - state.scannedAt < CONTRACT_INDEX_TTL_MS) return;
 
-  contractScans.set(regionId, { scanning: true, scannedAt: state?.scannedAt ?? 0, byType: state?.byType ?? new Map() });
+  contractScans.set(regionId, { scanning: true, attemptedAt: Date.now(), scannedAt: state?.scannedAt ?? 0, byType: state?.byType ?? new Map() });
   console.log('[Contracts] 开始扫描星域', regionId);
 
   try {
@@ -399,6 +407,7 @@ async function scanRegionContracts(regionId: number): Promise<void> {
             side,
             total_price: c.price > 0 ? c.price : c.reward,
             region_id: regionId,
+            location_id: c.start_location_id ?? 0,
             title: c.title ?? '',
             date_issued: c.date_issued,
             date_expired: c.date_expired
@@ -414,11 +423,12 @@ async function scanRegionContracts(regionId: number): Promise<void> {
     });
     await Promise.all(workers);
 
-    contractScans.set(regionId, { scanning: false, scannedAt: Date.now(), byType });
+    contractScans.set(regionId, { scanning: false, attemptedAt: Date.now(), scannedAt: Date.now(), byType });
     console.log(`[Contracts] 星域 ${regionId} 索引完成: ${candidates.length} 个有效合同 → ${byType.size} 种物品`);
   } catch (err) {
     console.warn('[Contracts] 星域', regionId, '扫描失败:', err instanceof Error ? err.message : err);
-    contractScans.set(regionId, { scanning: false, scannedAt: 0, byType: contractScans.get(regionId)?.byType ?? new Map() });
+    // 保留旧索引，attemptedAt 用于失败冷却（SCAN_FAIL_COOLDOWN_MS 内不再重试）
+    contractScans.set(regionId, { scanning: false, attemptedAt: Date.now(), scannedAt: contractScans.get(regionId)?.scannedAt ?? 0, byType: contractScans.get(regionId)?.byType ?? new Map() });
   }
 }
 
@@ -468,6 +478,26 @@ async function getRegionBasisPrice(regionId: number, typeId: number, basis: 'buy
   return value;
 }
 
+/** 空间站 → 星系ID 缓存（空间站不会搬家，缓存 24 小时） */
+const stationSystemCache = new MemoryCache<number | null>();
+
+/** 解析合同地点所属星系：空间站可解析，玩家建筑返回 null */
+async function resolveContractSystem(locationId: number): Promise<SystemBrief | null> {
+  if (!locationId || locationId >= 1_000_000_000_000) return null; // 玩家建筑无法公开解析
+  let systemId = stationSystemCache.get(`st:${locationId}`);
+  if (systemId === null) {
+    try {
+      const result = await getStation(scanClient, locationId);
+      systemId = result.success && result.data?.system_id ? result.data.system_id : null;
+    } catch {
+      systemId = null;
+    }
+    stationSystemCache.set(`st:${locationId}`, systemId, NAME_TTL_MS);
+  }
+  if (!systemId) return null;
+  return resolveSystemInfo(systemId);
+}
+
 /**
  * 折算某星域合同中指定物品的单价（公式可在设置页自定义）：
  * - 合同只含该物品：总价 ÷ 数量
@@ -502,9 +532,27 @@ async function valuateContracts(
   });
   await Promise.all(workers);
 
+  // 解析合同所在星系（只对匹配到的合同解析，数量少）
+  const locationIds = [...new Set(matched.map(c => c.location_id).filter(Boolean))];
+  const locMap = new Map<number, SystemBrief | null>();
+  let locCursor = 0;
+  const locWorkers = Array.from({ length: 4 }, async () => {
+    while (locCursor < locationIds.length) {
+      const lid = locationIds[locCursor++];
+      locMap.set(lid, await resolveContractSystem(lid));
+    }
+  });
+  await Promise.all(locWorkers);
+
   for (const c of matched) {
     const quantity = c.items[typeId];
     const otherEntries = Object.entries(c.items).filter(([tid]) => Number(tid) !== typeId);
+    const loc = locMap.get(c.location_id) ?? null;
+    const locFields = {
+      system_name: loc?.name ?? null,
+      security: loc?.security ?? null,
+      is_structure: c.location_id >= 1_000_000_000_000
+    };
 
     if (otherEntries.length === 0) {
       result.push({
@@ -517,6 +565,7 @@ async function valuateContracts(
         estimated: false,
         region_id: regionId,
         region_name: regionName,
+        ...locFields,
         title: c.title,
         date_issued: c.date_issued,
         date_expired: c.date_expired
@@ -548,6 +597,7 @@ async function valuateContracts(
       estimated: true,
       region_id: regionId,
       region_name: regionName,
+      ...locFields,
       title: c.title,
       date_issued: c.date_issued,
       date_expired: c.date_expired
@@ -556,8 +606,35 @@ async function valuateContracts(
   return result;
 }
 
-/** 全星域合同时优先覆盖的主要贸易星域 */
+/** 全星域合同时优先扫描的主要贸易星域（排扫描队列最前） */
 const MAJOR_TRADE_REGIONS = [10000002, 10000043, 10000032, 10000042, 10000030];
+
+/** 星域扫描队列：最多同时扫 MAX_REGION_SCANS 个星域，避免打满 ESI */
+const MAX_REGION_SCANS = 4;
+const regionScanQueue: number[] = [];
+
+/** 扫描失败冷却：失败 5 分钟内不再重试，避免网络故障时重试风暴 */
+const SCAN_FAIL_COOLDOWN_MS = 5 * 60 * 1000;
+
+function queueRegionScan(regionId: number): void {
+  const state = contractScans.get(regionId);
+  if (state?.scanning) return;
+  if (state && Date.now() - state.scannedAt < CONTRACT_INDEX_TTL_MS) return;
+  if (state && state.attemptedAt > 0 && Date.now() - state.attemptedAt < SCAN_FAIL_COOLDOWN_MS) return;
+  if (regionScanQueue.includes(regionId)) return;
+  regionScanQueue.push(regionId);
+  void pumpScanQueue();
+}
+
+async function pumpScanQueue(): Promise<void> {
+  while (regionScanQueue.length > 0) {
+    const current = [...contractScans.values()].filter(s => s.scanning).length;
+    if (current >= MAX_REGION_SCANS) return;
+    const next = regionScanQueue.shift();
+    if (next == null) return;
+    void scanRegionContracts(next).finally(() => pumpScanQueue());
+  }
+}
 
 interface ContractQueryResult {
   ready: boolean;
@@ -565,6 +642,8 @@ interface ContractQueryResult {
   contracts: QueriedContract[];
   /** 已完成扫描并纳入合并的星域 */
   scannedRegions: number[];
+  /** 全星域模式下的星域总数（扫描进度分母） */
+  totalRegions?: number;
   /** 其中实际有该物品合同的星域数 */
   regionsWithContracts: number;
   scannedAt: number | null;
@@ -574,7 +653,7 @@ async function queryContracts(regionId: number, typeId: number): Promise<Contrac
   if (regionId !== 0) {
     const state = contractScans.get(regionId);
     const fresh = state && Date.now() - state.scannedAt < CONTRACT_INDEX_TTL_MS;
-    if (!fresh) void scanRegionContracts(regionId);
+    if (!fresh) queueRegionScan(regionId);
     const current = contractScans.get(regionId);
     const raw = current?.byType.get(typeId) ?? [];
     const contracts = (await valuateContracts(raw, typeId, regionId, null))
@@ -589,17 +668,17 @@ async function queryContracts(regionId: number, typeId: number): Promise<Contrac
     };
   }
 
-  // 全星域：合并所有已索引星域；主要贸易星域索引起不来时后台补扫
-  for (const id of MAJOR_TRADE_REGIONS) {
-    const s = contractScans.get(id);
-    if (!s || Date.now() - s.scannedAt >= CONTRACT_INDEX_TTL_MS) {
-      void scanRegionContracts(id);
-    }
+  // 全星域：立即触发所有 K 空间星域的扫描（主要贸易星域排前，虫洞/特殊星域除外），
+  // 已完成扫描的星域结果先返回，前端轮询渐进更新
+  const allRegions = (await fetchRegionList()).filter(r => r.region_id < 11000000);
+  const restIds = allRegions.map(r => r.region_id).filter(id => !MAJOR_TRADE_REGIONS.includes(id));
+  for (const id of [...MAJOR_TRADE_REGIONS, ...restIds]) {
+    queueRegionScan(id);
   }
-  const nameMap = new Map((await fetchRegionList()).map(r => [r.region_id, r.name]));
+  const nameMap = new Map(allRegions.map(r => [r.region_id, r.name]));
   const merged: QueriedContract[] = [];
   const scannedRegions: number[] = [];
-  let anyScanning = false;
+  let anyScanning = regionScanQueue.length > 0;
   let latestScan = 0;
   for (const [rid, s] of contractScans) {
     if (s.scanning) anyScanning = true;
@@ -615,6 +694,7 @@ async function queryContracts(regionId: number, typeId: number): Promise<Contrac
     scanning: anyScanning,
     contracts: merged,
     scannedRegions,
+    totalRegions: allRegions.length,
     regionsWithContracts: new Set(merged.map(c => c.region_id)).size,
     scannedAt: latestScan || null
   };

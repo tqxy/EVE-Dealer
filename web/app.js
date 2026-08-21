@@ -293,23 +293,24 @@
       renderMergedOrders();
 
       const note = $('contractsNote');
+      const totalText = data.totalRegions ? `/${data.totalRegions}` : '';
       if (!data.ready && data.scanning) {
-        note.textContent = '合同索引构建中（首次约需几分钟），稍后自动更新…';
+        note.textContent = `合同扫描中（已扫描 ${data.scannedRegions.length}${totalText} 个星域），结果渐进更新…`;
         contractPollTimer = setTimeout(() => {
           if (currentItem === typeId) loadContracts(typeId);
-        }, 20000);
+        }, 10000);
       } else if (data.ready) {
         const est = data.contracts.filter(c => c.estimated).length;
         const regionText = currentRegion === 0
-          ? `；已扫描 ${data.scannedRegions.length} 个星域，其中 ${data.regionsWithContracts} 个有该物品合同`
+          ? `；已扫描 ${data.scannedRegions.length}${totalText} 个星域，其中 ${data.regionsWithContracts} 个有该物品合同`
           : '';
         note.textContent =
           `公开合同 ${data.contracts.length} 份（含估算 ${est} 份${regionText}` +
-          `${data.scanning ? '，后台续扫中' : ''}）`;
+          `${data.scanning ? '，续扫中' : ''}）`;
         if (data.scanning) {
           contractPollTimer = setTimeout(() => {
             if (currentItem === typeId) loadContracts(typeId);
-          }, 30000);
+          }, 10000);
         }
       } else {
         note.textContent = '暂无合同数据';
@@ -359,7 +360,15 @@
         const priceHtml = c.estimated
           ? `<span class="price-estimated" title="合同含其他物品：总价已扣除其他物品估值（该星域${basisText}×${discountText}）后折算">≈${formatQty(c.unit_price)}</span>`
           : formatQty(c.unit_price);
-        const loc = c.region_name ? `<span class="o-loc">${escapeHtml(c.region_name)}</span>` : '<span class="o-loc">—</span>';
+        const secBadge = c.security != null
+          ? `<span class="sec-badge" style="color:${secColor(c.security)};border-color:${secColor(c.security)}">${c.security.toFixed(1)}</span>`
+          : '';
+        const cLocText = c.system_name
+          ? (c.region_name ? `${c.region_name} · ${c.system_name}` : c.system_name)
+          : (c.region_name ? `${c.region_name}${c.is_structure ? ' · 玩家建筑' : ''}` : (c.is_structure ? '玩家建筑' : '—'));
+        const loc = c.is_structure && !c.system_name
+          ? `<span class="o-structure" title="玩家建筑合同">${escapeHtml(cLocText)} ${secBadge}⧉</span>`
+          : `<span class="o-loc">${escapeHtml(cLocText)} ${secBadge}</span>`;
         return `<tr${flash}>
           <td class="${priceCls}">${priceHtml}<span class="tag-contract" title="公开合同${c.title ? '：' + escapeHtml(c.title) : ''}">合同</span></td>
           <td>${formatQty(c.quantity)}</td>
@@ -375,8 +384,8 @@
         ? `<span class="sec-badge" style="color:${secColor(o.security)};border-color:${secColor(o.security)}">${o.security.toFixed(1)}</span>`
         : '';
       const locHtml = o.is_structure
-        ? `<span class="o-structure" title="玩家建筑订单">${secBadge}${escapeHtml(locText)} ⧉</span>`
-        : `<span class="o-loc">${secBadge}${escapeHtml(locText)}</span>`;
+        ? `<span class="o-structure" title="玩家建筑订单">${escapeHtml(locText)} ${secBadge}⧉</span>`
+        : `<span class="o-loc">${escapeHtml(locText)} ${secBadge}</span>`;
       return `<tr${flash}>
         <td class="${priceCls}">${formatQty(o.price)}</td>
         <td>${formatQty(o.volume_remain)}</td>
