@@ -217,8 +217,19 @@
         (price.sell_region_name ? `<span class="region-hint">${escapeHtml(price.sell_region_name)}</span>` : ''));
       setWithFlash($('priceBuy'), formatIsk(price.buy) + (price.buy != null ? ' ISK' : '') +
         (price.buy_region_name ? `<span class="region-hint">${escapeHtml(price.buy_region_name)}</span>` : ''));
-      setWithFlash($('priceVolume'), price.volume ? formatQty(price.volume.volume) : '—');
-      setWithFlash($('priceAvg'), price.volume ? formatIsk(price.volume.average) + ' ISK' : '—');
+
+      // 全星域模式：后两张卡显示吉他参考价；其他星域显示昨日成交量/均价
+      if (price.region_id === 0 && price.jita) {
+        $('priceLabel3').textContent = '吉他卖一价';
+        $('priceLabel4').textContent = '吉他买一价';
+        setWithFlash($('priceVolume'), formatIsk(price.jita.sell) + (price.jita.sell != null ? ' ISK' : ''));
+        setWithFlash($('priceAvg'), formatIsk(price.jita.buy) + (price.jita.buy != null ? ' ISK' : ''));
+      } else {
+        $('priceLabel3').textContent = '昨日成交量';
+        $('priceLabel4').textContent = '昨日均价';
+        setWithFlash($('priceVolume'), price.volume ? formatQty(price.volume.volume) : '—');
+        setWithFlash($('priceAvg'), price.volume ? formatIsk(price.volume.average) + ' ISK' : '—');
+      }
       $('priceUpdatedAt').textContent =
         `价格更新于 ${formatTime(price.updatedAt)}${fromCache ? '（缓存）' : '（实时拉取）'}`;
     } catch (err) {
@@ -289,7 +300,9 @@
         }, 20000);
       } else if (data.ready) {
         const est = data.contracts.filter(c => c.estimated).length;
-        const regionText = currentRegion === 0 ? `，覆盖 ${data.scannedRegions.length} 个星域` : '';
+        const regionText = currentRegion === 0
+          ? `；已扫描 ${data.scannedRegions.length} 个星域，其中 ${data.regionsWithContracts} 个有该物品合同`
+          : '';
         note.textContent =
           `公开合同 ${data.contracts.length} 份（含估算 ${est} 份${regionText}` +
           `${data.scanning ? '，后台续扫中' : ''}）`;
@@ -358,9 +371,12 @@
       const flash = rowSigChanged(side, 'o' + o.order_id, `${o.price}|${o.volume_remain}`) ? ' class="row-flash"' : '';
       const sysLoc = o.system_name || (o.system_id ? '星系 ' + o.system_id : '—');
       const locText = o.region_name ? `${o.region_name} · ${sysLoc}` : sysLoc;
+      const secBadge = o.security != null
+        ? `<span class="sec-badge" style="color:${secColor(o.security)};border-color:${secColor(o.security)}">${o.security.toFixed(1)}</span>`
+        : '';
       const locHtml = o.is_structure
-        ? `<span class="o-structure" title="玩家建筑订单">${escapeHtml(locText)} ⧉</span>`
-        : `<span class="o-loc">${escapeHtml(locText)}</span>`;
+        ? `<span class="o-structure" title="玩家建筑订单">${secBadge}${escapeHtml(locText)} ⧉</span>`
+        : `<span class="o-loc">${secBadge}${escapeHtml(locText)}</span>`;
       return `<tr${flash}>
         <td class="${priceCls}">${formatQty(o.price)}</td>
         <td>${formatQty(o.volume_remain)}</td>
@@ -377,6 +393,21 @@
     const hours = Math.floor(ms / 3600000);
     if (hours < 24) return `剩 ${hours} 小时`;
     return `剩 ${Math.floor(hours / 24)} 天`;
+  }
+
+  /** 安等着色（EVE 惯例：高安蓝→绿→黄，低安橙，00 红） */
+  function secColor(sec) {
+    if (sec >= 1.0) return '#2f9be8';
+    if (sec >= 0.9) return '#48ab48';
+    if (sec >= 0.8) return '#5ebd4f';
+    if (sec >= 0.7) return '#7dd65f';
+    if (sec >= 0.6) return '#a2e86e';
+    if (sec >= 0.5) return '#f3f781';
+    if (sec >= 0.4) return '#f7d57e';
+    if (sec >= 0.3) return '#f5b35a';
+    if (sec >= 0.2) return '#f58d3d';
+    if (sec >= 0.1) return '#f26130';
+    return '#ef1c24';
   }
 
   // ---------- 自动刷新 ----------

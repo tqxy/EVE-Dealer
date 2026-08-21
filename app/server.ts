@@ -59,6 +59,8 @@ interface RegionPrice {
   /** 全星域聚合时标注最优价来源星域 */
   sell_region_name?: string | null;
   buy_region_name?: string | null;
+  /** 全星域模式附带的吉他（Jita 4-4）参考价 */
+  jita?: { sell: number | null; buy: number | null };
   volume: {
     date: string;
     average: number;
@@ -76,6 +78,8 @@ interface OrderRow {
   volume_remain: number;
   system_id: number;
   system_name: string | null;
+  /** 星系安等（-1.0 ~ 1.0） */
+  security?: number | null;
   is_structure: boolean;
   issued: string;
   duration: number;
@@ -217,15 +221,26 @@ async function fetchPrice(regionId: number, typeId: number): Promise<RegionPrice
   return commitPrice(cacheKey(regionId, typeId), entry, allEmpty);
 }
 
-async function resolveSystemName(systemId: number): Promise<string | null> {
-  const cached = nameCache.get(`sys:${systemId}`);
-  if (cached) return cached;
+interface SystemBrief {
+  name: string | null;
+  security: number | null;
+}
+
+async function resolveSystemInfo(systemId: number): Promise<SystemBrief> {
+  const cached = nameCache.getWithMeta(`sys:${systemId}`);
+  if (cached) {
+    const [name, sec] = String(cached.value).split('|');
+    return { name: name || null, security: sec ? Number(sec) : null };
+  }
   const result = await getSystem(client, systemId);
   if (result.success && result.data?.name) {
-    nameCache.set(`sys:${systemId}`, result.data.name, NAME_TTL_MS);
-    return result.data.name;
+    const sec = typeof result.data.security_status === 'number'
+      ? Math.round(result.data.security_status * 10) / 10
+      : null;
+    nameCache.set(`sys:${systemId}`, `${result.data.name}|${sec ?? ''}`, NAME_TTL_MS);
+    return { name: result.data.name, security: sec };
   }
-  return null;
+  return { name: null, security: null };
 }
 
 async function fetchOrders(regionId: number, typeId: number): Promise<OrderBook> {
@@ -252,15 +267,17 @@ async function fetchOrders(regionId: number, typeId: number): Promise<OrderBook>
     ? buyRes.value.data.filter(o => orderInScope(o, regionId)).sort((a, b) => b.price - a.price).slice(0, 20).map(toRow)
     : [];
 
-  // 解析展示的星系名称（带内存缓存，失败时保留 null）
+  // 解析展示的星系名称与安等（带内存缓存，失败时保留 null）
   const systemIds = [...new Set([...sellOrders, ...buyOrders].map(o => o.system_id).filter(Boolean))];
-  const names = await Promise.allSettled(systemIds.map(id => resolveSystemName(id)));
-  const nameMap = new Map<number, string | null>();
+  const infos = await Promise.allSettled(systemIds.map(id => resolveSystemInfo(id)));
+  const infoMap = new Map<number, SystemBrief>();
   systemIds.forEach((id, i) => {
-    nameMap.set(id, names[i].status === 'fulfilled' ? names[i].value : null);
+    infoMap.set(id, infos[i].status === 'fulfilled' ? infos[i].value : { name: null, security: null });
   });
   for (const row of [...sellOrders, ...buyOrders]) {
-    row.system_name = nameMap.get(row.system_id) ?? null;
+    const info = infoMap.get(row.system_id);
+    row.system_name = info?.name ?? null;
+    row.security = info?.security ?? null;
   }
 
   const book: OrderBook = {
@@ -546,7 +563,10 @@ interface ContractQueryResult {
   ready: boolean;
   scanning: boolean;
   contracts: QueriedContract[];
+  /** 已完成扫描并纳入合并的星域 */
   scannedRegions: number[];
+  /** 其中实际有该物品合同的星域数 */
+  regionsWithContracts: number;
   scannedAt: number | null;
 }
 
@@ -564,6 +584,7 @@ async function queryContracts(regionId: number, typeId: number): Promise<Contrac
       scanning: current?.scanning ?? false,
       contracts,
       scannedRegions: current && current.scannedAt > 0 ? [regionId] : [],
+      regionsWithContracts: contracts.length > 0 ? 1 : 0,
       scannedAt: current?.scannedAt || null
     };
   }
@@ -594,6 +615,7 @@ async function queryContracts(regionId: number, typeId: number): Promise<Contrac
     scanning: anyScanning,
     contracts: merged,
     scannedRegions,
+    regionsWithContracts: new Set(merged.map(c => c.region_id)).size,
     scannedAt: latestScan || null
   };
 }
@@ -629,6 +651,9 @@ async function fetchAllRegionsPrice(typeId: number): Promise<RegionPrice> {
   });
   await Promise.all(workers);
 
+  // 附带吉他参考价（走缓存，几乎零成本）
+  const jita = await fetchPrice(JITA_REGION_ID, typeId);
+
   const entry: RegionPrice = {
     type_id: typeId,
     region_id: 0,
@@ -636,6 +661,7 @@ async function fetchAllRegionsPrice(typeId: number): Promise<RegionPrice> {
     buy: best.buy ? best.buy.price : null,
     sell_region_name: best.sell ? nameMap.get(best.sell.region_id) ?? null : null,
     buy_region_name: best.buy ? nameMap.get(best.buy.region_id) ?? null : null,
+    jita: { sell: jita.sell, buy: jita.buy },
     volume: null,
     updatedAt: new Date().toISOString()
   };
@@ -684,13 +710,15 @@ async function fetchAllRegionsOrders(typeId: number): Promise<OrderBook> {
   const buyOrders = buyAll.sort((a, b) => b.price - a.price).slice(0, 20);
 
   const systemIds = [...new Set([...sellOrders, ...buyOrders].map(o => o.system_id).filter(Boolean))];
-  const names = await Promise.allSettled(systemIds.map(id => resolveSystemName(id)));
-  const sysNameMap = new Map<number, string | null>();
+  const infos = await Promise.allSettled(systemIds.map(id => resolveSystemInfo(id)));
+  const infoMap = new Map<number, SystemBrief>();
   systemIds.forEach((id, i) => {
-    sysNameMap.set(id, names[i].status === 'fulfilled' ? names[i].value : null);
+    infoMap.set(id, infos[i].status === 'fulfilled' ? infos[i].value : { name: null, security: null });
   });
   for (const row of [...sellOrders, ...buyOrders]) {
-    row.system_name = sysNameMap.get(row.system_id) ?? null;
+    const info = infoMap.get(row.system_id);
+    row.system_name = info?.name ?? null;
+    row.security = info?.security ?? null;
   }
 
   const book: OrderBook = {

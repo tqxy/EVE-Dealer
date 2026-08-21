@@ -256,6 +256,18 @@ html, body { height: 100%; }
 }
 .contracts-note { color: var(--eve-omega); }
 
+/* 安等徽章 */
+.sec-badge {
+  display: inline-block;
+  font-size: 10px;
+  border: 1px solid;
+  border-radius: 2px;
+  padding: 0 3px;
+  margin-right: 6px;
+  vertical-align: middle;
+  text-shadow: none;
+}
+
 .orders-col { max-height: 340px; overflow-y: auto; }
 
 .updated-line {
